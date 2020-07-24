@@ -1,0 +1,47 @@
+<head>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+
+<body>
+    <div class="header">
+        <div class="id h-box"></div>
+        <div class="h-spacer"></div>
+        <div class="name h-box"></div>
+    </div> 
+    <main>
+        <div class="wrapper higher">
+            <div class="naming box">
+                <h3>Code Room</h3>
+                <input type="text" id="name" placeholder="Name">
+                <button class="button" id="submit">Continue</button>
+            </div>
+        </div>     
+        <div class="wrapper higher">
+            <div class="room box-flat">
+                <input type="text" class="narrow" id="id" maxlength="6" placeholder="Room ID">
+                <button class="button" id="join">Join</button>
+                <div class="divider">or</div>
+                <button class="button" id="create">Create a room</button>
+            </div>
+        </div>  
+        <div class="wrapper">
+            <div class="content">
+                <!-- Actual main app here... -->
+                <div class="box-flat">
+                    <div id="code"></div>
+                    <button class="button" id="run">__</button>
+                    <div id="console"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="/lib/codemirror.js"></script>
+    <link rel="stylesheet" href="/lib/codemirror.css">
+    <link rel="stylesheet" href="/lib/theme.css">
+    <script src="/lib/javascript.js"></script>
+    <script src="/index.js"></script>
+</body>
