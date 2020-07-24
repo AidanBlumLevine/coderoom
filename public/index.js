@@ -3,7 +3,8 @@ var cm;
 var cm_console;
 var worker;
 var run_timeout;
-
+var canvas;
+var ctx;
 socket.on('name', name => {
     $('.naming').addClass('flat').parent().addClass('hide-left');
     $('.room').addClass('unflat').parent().addClass('hide-left');
@@ -33,6 +34,8 @@ socket.on('connected', id => {
     setTimeout(function () {
         cm.refresh();
     }, 1500);
+    canvas = $('#canvas')[0];
+    ctx = canvas.getContext('2d');
 });
 socket.on('bad-room', id => {
     $('#id').addClass('error');
@@ -50,22 +53,41 @@ $('#join').click(e => {
 $('#create').click(e => {
     socket.emit('create', '');
 });
-//Code editor
-$('#run').click(e => {
 
-});
 
 function run() {
     cm_console.setValue('');
     var code = cm.getValue();
-    code = code.split('console.log').join('postMessage');
+    code = code.split('console.log').join('console_log');
+    code = worker_addons + '\n' + code;
     var blob = new Blob([code]);
     if (worker) {
         worker.terminate();
     }
     worker = new Worker(window.URL.createObjectURL(blob));
     worker.onmessage = function (message) {
-        print(message.data);
+        var msg = JSON.parse(message.data);
+        if (msg.type == 'console') {
+            print(msg.message);
+        }
+        if (msg.type == 'canvas') {
+            var attributes = msg.attributes;
+            for (var a in attributes) {
+                ctx[a] = attributes[a];
+            }
+            var method = ctx[msg.method];
+            if (typeof method === "function") {
+                if (method.length === msg.args.length) {
+                    method.apply(ctx, msg.args);
+                } else if (method.length > msg.args.length) {
+                    print_error('TypeError: Not enough arguments');
+                } else {
+                    print_error('TypeError: Too many arguments');
+                }
+            } else {
+                print_error('TypeError: ' + msg.method + 'is not a function.');
+            }
+        }
     }
     worker.onerror = function (error) {
         print_error(error.message);
@@ -109,34 +131,36 @@ function escapeHtml(unsafe) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
-/*
- $('#run').click(event => {
-    clearOutput();
-    var code = '"use strict";' + cm.getValue();
-    code = code.replaceAll('console.log','print');
-    try {
-        eval(code);
-    } catch (e) {
-        console.log(e.message);
-    }
+
+//CANVAS EMULATOR
+var worker_addons = `
+
+var CanvasRenderingContext2D = function () {
+    this.fillStyle = "black";
+    this.strokeStyle = "black";
+    this.lineWidth = 1.0;
+};
+
+["fillRect", "strokeRect", "beginPath", "rotate", "stroke"].forEach(function (methodName) {
+    CanvasRenderingContext2D.prototype[methodName] = function () {
+        var msg = {
+            type: 'canvas',
+            method: methodName,
+            args: Array.prototype.slice.call(arguments),
+            attributes: this
+        }
+        postMessage(JSON.stringify(msg));
+    };
 });
 
-function print(text){
-    $('#console').append(escapeHtml(text));
-}
+ctx = new CanvasRenderingContext2D;
 
-function clearOutput(){
-    $('#console').text('');
-}
-
-function escapeHtml(unsafe) {
-    if(unsafe == undefined){
-        return '';
+function console_log(message) {
+    var msg = {
+        type: 'console',
+        message: message
     }
-    return unsafe.toString()
-         .replace(/&/g, "&amp;")
-         .replace(/</g, "&lt;")
-         .replace(/>/g, "&gt;")
-         .replace(/"/g, "&quot;")
-         .replace(/'/g, "&#039;");
- }*/
+    postMessage(JSON.stringify(msg));
+}
+
+`;

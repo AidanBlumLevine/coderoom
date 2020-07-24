@@ -46,6 +46,15 @@ body {
     flex-grow: 1;
 }
 
+.horizontal-flex {
+    display: flex;
+}
+
+.horizontal-flex > div {
+    display: flex;
+    flex-direction: column;
+}
+
 main {
     display: flex;
     justify-content: center;

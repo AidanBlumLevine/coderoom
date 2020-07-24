@@ -7,7 +7,7 @@
         <div class="id h-box"></div>
         <div class="h-spacer"></div>
         <div class="name h-box"></div>
-    </div> 
+    </div>
     <main>
         <div class="wrapper higher">
             <div class="naming box">
@@ -15,7 +15,7 @@
                 <input type="text" id="name" placeholder="Name">
                 <button class="button" id="submit">Continue</button>
             </div>
-        </div>     
+        </div>
         <div class="wrapper higher">
             <div class="room box-flat">
                 <input type="text" class="narrow" id="id" maxlength="6" placeholder="Room ID">
@@ -23,19 +23,23 @@
                 <div class="divider">or</div>
                 <button class="button" id="create">Create a room</button>
             </div>
-        </div>  
+        </div>
         <div class="wrapper">
             <div class="content">
                 <!-- Actual main app here... -->
                 <div class="box-flat">
-                    <div id="code"></div>
-                    <button class="button" id="run">__</button>
-                    <div id="console"></div>
+                    <div class="horizontal-flex">
+                        <div id="code"></div>
+                        <div class="output">
+                            <canvas id="canvas" width="500px" height="300px"></canvas>
+                            <div id="console"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </main>
-    
+
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
