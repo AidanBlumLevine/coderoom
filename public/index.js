@@ -57,6 +57,7 @@ $('#create').click(e => {
 
 function run() {
     cm_console.setValue('');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
     var code = cm.getValue();
     code = code.split('console.log').join('console_log');
     code = worker_addons + '\n' + code;
@@ -77,16 +78,27 @@ function run() {
             }
             var method = ctx[msg.method];
             if (typeof method === "function") {
-                if (method.length === msg.args.length) {
-                    method.apply(ctx, msg.args);
-                } else if (method.length > msg.args.length) {
-                    print_error('TypeError: Not enough arguments');
-                } else {
-                    print_error('TypeError: Too many arguments');
-                }
+                //if (method.length === msg.args.length) {
+                method.apply(ctx, msg.args);
+                // } else if (method.length > msg.args.length) {
+                //     print_error('TypeError: Not enough arguments');
+                // } else {
+                //     print_error('TypeError: Too many arguments');
+                // }
             } else {
                 print_error('TypeError: ' + msg.method + 'is not a function.');
             }
+        }
+        if (msg.type == 'image') {
+            var img = new Image();
+            img.onload = function () {
+                if (msg.args.length == 5) {
+                    ctx.drawImage(img, msg.args[1], msg.args[2], msg.args[3], msg.args[4]);
+                } else {
+                    ctx.drawImage(img, msg.args[1], msg.args[2]);
+                }
+            };
+            img.src = msg.args[0];
         }
     }
     worker.onerror = function (error) {
@@ -99,7 +111,7 @@ function print(text) {
     if (cm_console.getValue().length > 0) {
         newline = '\n';
     }
-    cm_console.setValue(cm_console.getValue() + newline + text);
+    cm_console.replaceRange(newline + text, CodeMirror.Pos(cm_console.lastLine()));
     //I dont need escapeHtml because codemirror excapes it for me
 }
 
@@ -110,14 +122,10 @@ function print_error(text) {
         newline = '\n';
         curr_length++;
     }
-    cm_console.setValue(cm_console.getValue() + newline + ' ' + text + ' ');
+    cm_console.replaceRange(newline + ' ' + text + ' ' + text, CodeMirror.Pos(cm_console.lastLine()));
     cm_console.markText({ line: curr_length - 1, ch: 0 },
         { line: curr_length - 1, ch: cm_console.getLine(curr_length - 1).length },
         { className: "cm-error" });
-}
-
-function clearOutput() {
-    $('#console').text('');
 }
 
 function escapeHtml(unsafe) {
@@ -139,6 +147,14 @@ var CanvasRenderingContext2D = function () {
     this.fillStyle = "black";
     this.strokeStyle = "black";
     this.lineWidth = 1.0;
+};
+
+CanvasRenderingContext2D.prototype['drawImage'] = function () {
+    var msg = {
+        type: 'image',
+        args: Array.prototype.slice.call(arguments)
+    }
+    postMessage(JSON.stringify(msg));
 };
 
 ["fillRect", "strokeRect", "beginPath", "rotate", "stroke"].forEach(function (methodName) {
