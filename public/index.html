@@ -27,17 +27,47 @@
         <div class="wrapper">
             <div class="content">
                 <!-- Actual main app here... -->
-                <div class="box-flat">
-                    <div class="horizontal-flex">
-                        <div id="code"></div>
-                        <div class="output">
-                            <canvas id="canvas" width="500px" height="300px"></canvas>
-                            <div id="console"></div>
+                <div class="horizontal-flex">
+                    <div id="code">
+                        <div id="inner-code"></div>
+                    </div>
+                    <div class="right-side">
+                        <div id="canvas-wrapper">
+                            <span id="canvas-title">html canvas &nbsp; click for info</span>
+                            <span class="popup-parent">
+                                <div id="canvas-help">
+                                    <div>
+                                        <div class="canvas-help-close close-canvas-help">×</div>
+                                        This css canvas's <br><strong>CanvasRenderingContext2D</strong>
+                                        <br>is accessed as <span class="code-snippet">ctx</span><br><br>
+                                        For example: <br>
+                                        <span class="code-snippet">ctx.fillRect(10,10,20,20);</span><br><br>
+                                        Image drawing has been changed:<br>
+                                        <span class="code-snippet">ctx.drawImage(url, x, y, width?, height?);</span>
+                                    </div>
+                                </div>
+                            </span>
+                            <canvas id="canvas" class="close-canvas-help"></canvas>
+                        </div>
+                        <div id="console">
+                            <div id="inner-console"></div>
+                        </div>
+                        <div class="teacher-code-window hidden">
+                            <div class="other-code-area">
+                                <div class="other-code-label">teacher's code</div>
+                                <div class="other-code"></div>
+                            </div>
+                            <div class="other-bottom">
+                                <div class="other-console"></div>
+                                <div class="other-canvas hide">
+                                    <canvas class="other-canvas-obj"></canvas>
+                                </div>
+                                <div class="other-switch">click to switch to canvas</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
     </main>
 
 

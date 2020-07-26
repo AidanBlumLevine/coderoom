@@ -15,8 +15,8 @@ socket.on('connected', id => {
     $('.id').text(id);
     $('.content').parent().addClass('hide-left-double');
     $('.room').removeClass('unflat').addClass('flat').parent().addClass('hide-left-double');
-    $('.content').find('.box-flat').addClass('unflat');
-    cm = CodeMirror($('#code')[0], {
+    $('.horizontal-flex').addClass('unflat-strong');
+    cm = CodeMirror($('#inner-code')[0], {
         lineNumbers: true,
         theme: 't-light'
     });
@@ -24,18 +24,42 @@ socket.on('connected', id => {
         clearTimeout(run_timeout);
         run_timeout = setTimeout(run, 300);
     });
-    cm_console = CodeMirror($('#console')[0], {
+    cm.on("cursorActivity", function () {
+        var cursor = cm.getCursor();
+        var line = 'ln ' + cursor.line + '\xa0 ch ' + cursor.ch + '\xa0 javascript'
+        $('#code').attr('after-content', line);
+    });
+    $('#code').attr('after-content', 'ln ' + 0 + '\xa0 ch ' + 0 + '\xa0 javascript');
+
+
+    cm_console = CodeMirror($('#inner-console')[0], {
         theme: 't-console',
         readOnly: true,
         mode: 'text/plain'
     });
-    cm_console.setSize(500, 300);
-    cm.setSize(500, 300);
-    setTimeout(function () {
+    setInterval(function () {
         cm.refresh();
+        cm_console.refresh();
+        other_cm_console.refresh();
     }, 1500);
     canvas = $('#canvas')[0];
+    canvas.width  = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
     ctx = canvas.getContext('2d');
+    ctx.save();
+
+    //Other
+
+    other_cm_console = CodeMirror($('.other-console')[0], {
+        theme: 't-console',
+        readOnly: true,
+        mode: 'text/plain'
+    });
+    other_cm = CodeMirror($('.other-code')[0], {
+        readOnly: true,
+        lineNumbers: true,
+        theme: 't-light'
+    });
 });
 socket.on('bad-room', id => {
     $('#id').addClass('error');
@@ -53,11 +77,28 @@ $('#join').click(e => {
 $('#create').click(e => {
     socket.emit('create', '');
 });
+$('#canvas-title').click(e => {
+    $('#canvas-help').addClass('show');
+});
+$('.close-canvas-help').click(e => {
+    $('#canvas-help').removeClass('show');
+})
+$('.other-switch').click(e => {
+    $('.other-console').toggleClass('hide');
+    $('.other-canvas').toggleClass('hide');
+    if($('.other-console').hasClass('hide')){
+        $(this).text('click to switch to console');
+    } else {
+        $(this).text('click to switch to canvas');
+    }
+});
 
 
 function run() {
+    ctx.restore();
+    ctx.save();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     cm_console.setValue('');
-    ctx.clearRect(0,0,canvas.width,canvas.height);
     var code = cm.getValue();
     code = code.split('console.log').join('console_log');
     code = worker_addons + '\n' + code;
@@ -122,7 +163,7 @@ function print_error(text) {
         newline = '\n';
         curr_length++;
     }
-    cm_console.replaceRange(newline + ' ' + text + ' ' + text, CodeMirror.Pos(cm_console.lastLine()));
+    cm_console.replaceRange(newline + ' ' + text + ' ', CodeMirror.Pos(cm_console.lastLine()));
     cm_console.markText({ line: curr_length - 1, ch: 0 },
         { line: curr_length - 1, ch: cm_console.getLine(curr_length - 1).length },
         { className: "cm-error" });
@@ -147,6 +188,22 @@ var CanvasRenderingContext2D = function () {
     this.fillStyle = "black";
     this.strokeStyle = "black";
     this.lineWidth = 1.0;
+    // this.filter = "none";
+    // this.font = "10px sans-serif";
+    // this.globalAlpha = 1.0;
+    // this.globalCompositeOperation = "source-over";
+    // this.imageSmoothingEnabled = true;
+    // this.imageSmoothingQuality = ;
+    // this.lineCap = ;
+    // this.lineDashOffset = ;
+    // this.lineJoin = ;
+    // this.miterLimit = ;
+    // this.shadowBlur = ;
+    // this.shadowColor = ;
+    // this.shadowOffsetX = ;
+    // this.shadowOffsetY = ;
+    // this.textAlign = ;
+    // this.textBaseline = ;
 };
 
 CanvasRenderingContext2D.prototype['drawImage'] = function () {
@@ -157,7 +214,11 @@ CanvasRenderingContext2D.prototype['drawImage'] = function () {
     postMessage(JSON.stringify(msg));
 };
 
-["fillRect", "strokeRect", "beginPath", "rotate", "stroke"].forEach(function (methodName) {
+["clearRect", "strokeRect", "fillRect", "fillText", "strokeText", "setLineDash", 
+"createLinearGradient", "createRadialGradient", "createPattern", "beginPath", 
+"closePath", "moveTo", "lineTo", "bezierCurveTo", "quadraticCurveTo", "arc", 
+"arcTo", "ellipse", "rect", "fill", "stroke", "drawFocusIfNeeded", "clip", 
+"rotate", "scale", "translate", "setTransform", "resetTransform"].forEach(function (methodName) {
     CanvasRenderingContext2D.prototype[methodName] = function () {
         var msg = {
             type: 'canvas',
