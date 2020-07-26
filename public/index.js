@@ -28,6 +28,8 @@ socket.on('connected', id => {
         var cursor = cm.getCursor();
         var line = 'ln ' + cursor.line + '\xa0 ch ' + cursor.ch + '\xa0 javascript'
         $('#code').attr('after-content', line);
+        other_cm.setValue(cm.getValue());
+        other_cm_console.setValue(cm.getValue());
     });
     $('#code').attr('after-content', 'ln ' + 0 + '\xa0 ch ' + 0 + '\xa0 javascript');
 
@@ -40,6 +42,7 @@ socket.on('connected', id => {
     setInterval(function () {
         cm.refresh();
         cm_console.refresh();
+        other_cm.refresh();
         other_cm_console.refresh();
     }, 1500);
     canvas = $('#canvas')[0];
@@ -58,7 +61,8 @@ socket.on('connected', id => {
     other_cm = CodeMirror($('.other-code')[0], {
         readOnly: true,
         lineNumbers: true,
-        theme: 't-light'
+        theme: 't-light',
+        cursorBlinkRate: -1
     });
 });
 socket.on('bad-room', id => {
@@ -87,9 +91,9 @@ $('.other-switch').click(e => {
     $('.other-console').toggleClass('hide');
     $('.other-canvas').toggleClass('hide');
     if($('.other-console').hasClass('hide')){
-        $(this).text('click to switch to console');
+        $('.other-switch').text('click to switch to console');
     } else {
-        $(this).text('click to switch to canvas');
+        $('.other-switch').text('click to switch to canvas');
     }
 });
 
