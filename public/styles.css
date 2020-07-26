@@ -17,6 +17,8 @@ body {
     padding: 2rem;
     display: flex;
     flex-grow: 1;
+    overflow-y: scroll;
+    flex-direction: column;
 }
 
 .header {
@@ -78,6 +80,27 @@ body {
     flex-direction: column;
 }
 
+.teacher-code-toggle {
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    position: absolute;
+    left: 0;
+    top: -16;
+    right: 0;
+    height: 14px;
+    font-size: 10;
+    text-align: center;
+    color: #b0b0b0;
+    font-family: monospace;
+    transition: color .4s;
+}
+
+.teacher-code-toggle:hover {
+    color: #161821;
+    transition: color .4s;
+}
+
 .teacher-code-window.hidden {
     display: none;
 }
@@ -115,6 +138,7 @@ body {
 
 .other-switch {
     user-select: none;
+    -webkit-user-select: none;
     text-align: center;
     cursor: pointer;
     position: absolute;
@@ -127,6 +151,17 @@ body {
     height: 12px;
     font-family: monospace;
     border-radius: 0px 0px 10px 0px;
+    transition: background-color .4s;
+}
+
+.other-switch:hover {
+    background-color: #34363f;
+    transition: background-color .4s;
+}
+
+#canvas-wrapper {
+    overflow: hidden;
+    padding-right: 10px;
 }
 
 #code {
@@ -179,13 +214,26 @@ body {
     font-size: 10;
     height: 14px;
     text-align: right;
-    margin-bottom: -14px;
+    /* margin-bottom: -14px; */
     margin-right: 10px;
     color: #b0b0b0;
     font-family: monospace;
     cursor: pointer;
     z-index: 1;
     user-select: none;
+    -webkit-user-select: none;
+    transition: color .4s;
+}
+
+#canvas-title:hover {
+    color: #161821;
+    transition: color .4s;
+}
+
+#canvas-title::before {
+    content: attr(canvas-label);
+    position: absolute;
+    left: 3;
 }
 
 .other-code-label {
@@ -193,12 +241,14 @@ body {
     height: 14px;
     text-align: right;
     margin-bottom: -14px;
-    margin-right: 10px;
+    padding-right: 10px;
+    border-radius: 0px 10px 0px 0px;
     background-color: whitesmoke;
     color: #b0b0b0;
     font-family: monospace;
     z-index: 1;
     user-select: none;
+    -webkit-user-select: none;
 }
 
 .popup-parent {
@@ -250,6 +300,7 @@ strong {
     cursor: pointer;
     text-align: center;
     user-select: none;
+    -webkit-user-select: none;
 }
 
 #canvas-help.show {
@@ -390,6 +441,55 @@ h3 {
     margin-bottom: .5rem;
     font-size: 30;
     font-weight: lighter;
+}
+
+.student-area {
+    height: 0;
+    width: 100%;
+    
+}
+
+.student-area-sizer{
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    height: auto;
+    margin-top: 30px;
+    padding-bottom: 30px;
+    justify-content: space-between;
+}
+
+.student {
+    height: 65vh;
+    width: calc(50% - 5px);
+    margin: 5px 0px;
+}
+
+.student-box {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: white;
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 5px 30px 0 rgba(0, 0, 0, .05);
+}
+.student-title {
+    display: flex;
+    height: 2rem;
+}
+.student-code {
+    display: flex;
+    flex-grow: 1.5;
+}
+.student-canvas {
+    display: flex;
+    flex-grow: 1;
+}
+.student-console {
+    display: flex;
+    flex-grow: .75;
 }
 
 input {

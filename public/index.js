@@ -28,12 +28,8 @@ socket.on('connected', id => {
         var cursor = cm.getCursor();
         var line = 'ln ' + cursor.line + '\xa0 ch ' + cursor.ch + '\xa0 javascript'
         $('#code').attr('after-content', line);
-        other_cm.setValue(cm.getValue());
-        other_cm_console.setValue(cm.getValue());
     });
     $('#code').attr('after-content', 'ln ' + 0 + '\xa0 ch ' + 0 + '\xa0 javascript');
-
-
     cm_console = CodeMirror($('#inner-console')[0], {
         theme: 't-console',
         readOnly: true,
@@ -48,6 +44,13 @@ socket.on('connected', id => {
     canvas = $('#canvas')[0];
     canvas.width  = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
+    $('#canvas-title').attr('canvas-label','html canvas \xa0' + canvas.width + ' x ' + canvas.height);
+    $(window).on('resize', function(){
+        canvas.width  = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        $('#canvas-title').attr('canvas-label','html canvas \xa0' + canvas.width + ' x ' + canvas.height);
+        run();
+    });
     ctx = canvas.getContext('2d');
     ctx.save();
 
@@ -91,9 +94,17 @@ $('.other-switch').click(e => {
     $('.other-console').toggleClass('hide');
     $('.other-canvas').toggleClass('hide');
     if($('.other-console').hasClass('hide')){
-        $('.other-switch').text('click to switch to console');
+        $('.other-switch').text('click to switch to teacher\'s console');
     } else {
-        $('.other-switch').text('click to switch to canvas');
+        $('.other-switch').text('click to switch to teacher\'s canvas');
+    }
+});
+$('.teacher-code-toggle').click(e => {
+    $('.teacher-code-window').toggleClass('hidden');
+    if($('.teacher-code-window').hasClass('hidden')){
+        $('.teacher-code-toggle').text('click to show teacher\'s code, canvas and console');
+    } else {
+        $('.teacher-code-toggle').text('click to hide teacher\'s code, canvas and console');
     }
 });
 
