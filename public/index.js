@@ -5,14 +5,22 @@ var worker;
 var run_timeout;
 var canvas;
 var ctx;
+var student_cms = [];
+var owner = false;
+var changed = false; //queue for updating server
 socket.on('name', name => {
     $('.naming').addClass('flat').parent().addClass('hide-left');
     $('.room').addClass('unflat').parent().addClass('hide-left');
     $('.header').addClass('show');
     $('.name').text(name);
 });
-socket.on('connected', id => {
-    $('.id').text(id);
+socket.on('connected', room => {
+    $('.id').text(room.id);
+    owner = room.socket_is_owner;
+    if(owner){
+        $('.other-switch').hide();    
+    }
+    
     $('.content').parent().addClass('hide-left-double');
     $('.room').removeClass('unflat').addClass('flat').parent().addClass('hide-left-double');
     $('.horizontal-flex').addClass('unflat-strong');
@@ -22,8 +30,15 @@ socket.on('connected', id => {
     });
     cm.on("change", function () {
         clearTimeout(run_timeout);
+        changed = true;
         run_timeout = setTimeout(run, 300);
     });
+    setInterval(function () {
+        if(changed){
+            changed = false;
+            socket.emit('update',cm.getValue());
+        }
+    }, 1000);
     cm.on("cursorActivity", function () {
         var cursor = cm.getCursor();
         var line = 'ln ' + cursor.line + '\xa0 ch ' + cursor.ch + '\xa0 javascript'
@@ -35,20 +50,23 @@ socket.on('connected', id => {
         readOnly: true,
         mode: 'text/plain'
     });
-    setInterval(function () {
+    setTimeout(function () {
         cm.refresh();
         cm_console.refresh();
         other_cm.refresh();
         other_cm_console.refresh();
+        student_cms.forEach(e => {
+            e.refresh();
+        });
     }, 1500);
     canvas = $('#canvas')[0];
-    canvas.width  = canvas.offsetWidth;
+    canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
-    $('#canvas-title').attr('canvas-label','html canvas \xa0' + canvas.width + ' x ' + canvas.height);
-    $(window).on('resize', function(){
-        canvas.width  = canvas.offsetWidth;
+    $('#canvas-title').attr('canvas-label', 'html canvas \xa0' + canvas.width + ' x ' + canvas.height);
+    $(window).on('resize', function () {
+        canvas.width = canvas.offsetWidth;
         canvas.height = canvas.offsetHeight;
-        $('#canvas-title').attr('canvas-label','html canvas \xa0' + canvas.width + ' x ' + canvas.height);
+        $('#canvas-title').attr('canvas-label', 'html canvas \xa0' + canvas.width + ' x ' + canvas.height);
         run();
     });
     ctx = canvas.getContext('2d');
@@ -67,13 +85,49 @@ socket.on('connected', id => {
         theme: 't-light',
         cursorBlinkRate: -1
     });
+
+    //Student
+
+    // $('.student-code').each(function (i, obj) {
+    //     var student_code = CodeMirror(obj, {
+    //         readOnly: true,
+    //         lineNumbers: true,
+    //         theme: 't-light',
+    //         cursorBlinkRate: -1
+    //     });
+    //     student_cms.push(student_code);
+    // });
+    // $('.student-console').each(function (i, obj) {
+    //     var student_console = CodeMirror(obj, {
+    //         theme: 't-console',
+    //         readOnly: true,
+    //         mode: 'text/plain'
+    //     });
+    //     student_cms.push(student_console);
+    // });
 });
+socket.on('update', room => {
+    room.participants.filter(function (p) {
+        return p.socket_id !== socket.id;
+    }).forEach(p => {
+        if($('.student[socket_id:="'+ p.socket_id +'"]').length == 0){
+            var new_student = $('.student:hidden').clone();
+            new_student.removeAttr('hidden').attr('socket_id',p.socket_id);
+            new_student.appendTo('.student-area-sizer');
+        }
+        var code_instance = $('.student[socket_id:="'+ p.socket_id +'"]').find('.cm-s-t-light.CodeMirror')[0].CodeMirror;
+        code_instance.setValue(p.code);
+    });
+})
 socket.on('bad-room', id => {
     $('#id').addClass('error');
 });
 socket.on('created', id => {
     socket.emit('room', id);
 })
+
+
+
 $('#submit').click(e => {
     socket.emit('name', $('#name').val());
 });
@@ -93,7 +147,7 @@ $('.close-canvas-help').click(e => {
 $('.other-switch').click(e => {
     $('.other-console').toggleClass('hide');
     $('.other-canvas').toggleClass('hide');
-    if($('.other-console').hasClass('hide')){
+    if ($('.other-console').hasClass('hide')) {
         $('.other-switch').text('click to switch to teacher\'s console');
     } else {
         $('.other-switch').text('click to switch to teacher\'s canvas');
@@ -101,13 +155,12 @@ $('.other-switch').click(e => {
 });
 $('.teacher-code-toggle').click(e => {
     $('.teacher-code-window').toggleClass('hidden');
-    if($('.teacher-code-window').hasClass('hidden')){
+    if ($('.teacher-code-window').hasClass('hidden')) {
         $('.teacher-code-toggle').text('click to show teacher\'s code, canvas and console');
     } else {
         $('.teacher-code-toggle').text('click to hide teacher\'s code, canvas and console');
     }
 });
-
 
 function run() {
     ctx.restore();

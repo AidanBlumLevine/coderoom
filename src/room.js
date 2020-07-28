@@ -4,6 +4,12 @@ module.exports = class Rooms {
         this.rooms = [];
     }
 
+    update(){
+        this.rooms.forEach((room) => {
+            
+        });
+    }
+
     add(owner) {
         if (owner.controlled_room !== undefined) { return; }
         var id = Math.random().toString(36).slice(2, 8);
@@ -45,7 +51,25 @@ module.exports = class Rooms {
         return found;
     }
 
-    status(id) {
-        return 'statussss';
+    participants(id){
+        var participants = [];
+        this.io.in(id).clients((err, clients) => {
+            clients.forEach(client => {
+                var socket = this.io.sockets.connected[client];
+                participants.push({
+                    socket_id: socket.id,
+                    code: socket.current_js_code,
+                });
+            });
+        });
+        return participants;
+    }
+
+    status(id, socket) {
+        return {
+            id: id,
+            socket_is_owner: socket.controlled_room == this,
+            participants: this.participants(id)
+        };
     }
 }

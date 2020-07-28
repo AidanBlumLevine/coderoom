@@ -23,11 +23,16 @@ io.on('connection', (socket) => {
     socket.on('room', (id) => {
         if (socket.rooms[id] === undefined && Rooms.has(id)) {
             socket.join(id, () => {
-                socket.emit('connected', id);
+                socket.emit('connected', Rooms.status(id, socket));
             });
         } else {
             socket.emit('bad-room', id);
         }
+    });
+
+    socket.current_js_code = "";
+    socket.on('update', (code) => {
+        socket.current_js_code = code;
     });
 
     socket.on('disconnect', () => {
@@ -37,6 +42,10 @@ io.on('connection', (socket) => {
         }
     });
 });
+
+setInterval(function() {
+    Rooms.update();
+}, 1000);
 
 http.listen(5000, () => {
     console.log('listening on *:5000');
