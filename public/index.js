@@ -16,9 +16,13 @@ socket.on('name', name => {
 });
 socket.on('connected', room => {
     $('.id').text(room.id);
-    owner = room.socket_is_owner;
+    owner = room.participants.filter(p => {
+        return p.socket == socket.id;
+    })[0].owner;
     if(owner){
-        $('.other-switch').hide();    
+        $('.teacher-code-toggle').hide();    
+    } else {
+        $('.student-area-sizer').hide();    
     }
     
     $('.content').parent().addClass('hide-left-double');
@@ -122,10 +126,6 @@ socket.on('update', room => {
 socket.on('bad-room', id => {
     $('#id').addClass('error');
 });
-socket.on('created', id => {
-    socket.emit('room', id);
-})
-
 
 
 $('#submit').click(e => {

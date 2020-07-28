@@ -17,22 +17,19 @@ io.on('connection', (socket) => {
         socket.emit('name', name);
     });
     socket.on('create', () => {
-        socket.emit('created', Rooms.add(socket));
+        Rooms.add(socket);
     });
 
     socket.on('room', (id) => {
-        if (socket.rooms[id] === undefined && Rooms.has(id)) {
-            socket.join(id, () => {
-                socket.emit('connected', Rooms.status(id, socket));
-            });
+        if (socket.rooms[id] === undefined && Rooms.find(id) !== undefined) {
+            Rooms.join(socket, id);
         } else {
             socket.emit('bad-room', id);
         }
     });
 
-    socket.current_js_code = "";
     socket.on('update', (code) => {
-        socket.current_js_code = code;
+        Rooms.update(socket, code);
     });
 
     socket.on('disconnect', () => {
@@ -43,7 +40,7 @@ io.on('connection', (socket) => {
     });
 });
 
-setInterval(function() {
+setInterval(function () {
     Rooms.update();
 }, 1000);
 
