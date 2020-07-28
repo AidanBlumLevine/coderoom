@@ -5,7 +5,6 @@ var worker;
 var run_timeout;
 var canvas;
 var ctx;
-var student_cms = [];
 var owner = false;
 var changed = false; //queue for updating server
 socket.on('name', name => {
@@ -17,14 +16,14 @@ socket.on('name', name => {
 socket.on('connected', room => {
     $('.id').text(room.id);
     owner = room.participants.filter(p => {
-        return p.socket == socket.id;
+        return p.socket.id == socket.id;
     })[0].owner;
-    if(owner){
-        $('.teacher-code-toggle').hide();    
+    if (owner) {
+        $('.teacher-code-toggle').hide();
     } else {
-        $('.student-area-sizer').hide();    
+        $('.student-area-sizer').hide();
     }
-    
+
     $('.content').parent().addClass('hide-left-double');
     $('.room').removeClass('unflat').addClass('flat').parent().addClass('hide-left-double');
     $('.horizontal-flex').addClass('unflat-strong');
@@ -38,9 +37,9 @@ socket.on('connected', room => {
         run_timeout = setTimeout(run, 300);
     });
     setInterval(function () {
-        if(changed){
+        if (changed) {
             changed = false;
-            socket.emit('update',cm.getValue());
+            socket.emit('update', cm.getValue());
         }
     }, 1000);
     cm.on("cursorActivity", function () {
@@ -57,11 +56,6 @@ socket.on('connected', room => {
     setTimeout(function () {
         cm.refresh();
         cm_console.refresh();
-        other_cm.refresh();
-        other_cm_console.refresh();
-        student_cms.forEach(e => {
-            e.refresh();
-        });
     }, 1500);
     canvas = $('#canvas')[0];
     canvas.width = canvas.offsetWidth;
@@ -89,42 +83,59 @@ socket.on('connected', room => {
         theme: 't-light',
         cursorBlinkRate: -1
     });
-
-    //Student
-
-    // $('.student-code').each(function (i, obj) {
-    //     var student_code = CodeMirror(obj, {
-    //         readOnly: true,
-    //         lineNumbers: true,
-    //         theme: 't-light',
-    //         cursorBlinkRate: -1
-    //     });
-    //     student_cms.push(student_code);
-    // });
-    // $('.student-console').each(function (i, obj) {
-    //     var student_console = CodeMirror(obj, {
-    //         theme: 't-console',
-    //         readOnly: true,
-    //         mode: 'text/plain'
-    //     });
-    //     student_cms.push(student_console);
-    // });
 });
 socket.on('update', room => {
-    room.participants.filter(function (p) {
-        return p.socket_id !== socket.id;
-    }).forEach(p => {
-        if($('.student[socket_id:="'+ p.socket_id +'"]').length == 0){
-            var new_student = $('.student:hidden').clone();
-            new_student.removeAttr('hidden').attr('socket_id',p.socket_id);
-            new_student.appendTo('.student-area-sizer');
-        }
-        var code_instance = $('.student[socket_id:="'+ p.socket_id +'"]').find('.cm-s-t-light.CodeMirror')[0].CodeMirror;
-        code_instance.setValue(p.code);
-    });
-})
+    if (owner) {
+        room.participants.forEach(p => {
+            if (!p.owner) {
+                if ($('.student[userid="' + p.userid + '"]').length == 0) {
+                    var new_student = $('.student:hidden').clone();
+                    new_student.removeAttr('hidden').attr('userid', p.userid);
+                    new_student.appendTo('.student-area-sizer');
+                    new_student.find('.student-title').text(p.socket.name);
+                    var student_code = CodeMirror(new_student.find('.student-code')[0], {
+                        readOnly: true,
+                        lineNumbers: true,
+                        theme: 't-light',
+                        cursorBlinkRate: -1
+                    });
+                    var student_console = CodeMirror(new_student.find('.student-console')[0], {
+                        theme: 't-console',
+                        readOnly: true,
+                        mode: 'text/plain'
+                    });
+                }
+                var code_instance = $('.student[userid="' + p.userid + '"]').find('.CodeMirror.cm-s-t-light')[0].CodeMirror;
+                if (code_instance.getValue() != p.code) {
+                    var scrollInfo = code_instance.getScrollInfo();
+                    code_instance.setValue(p.code);
+                    code_instance.scrollTo(scrollInfo.left, scrollInfo.top);
+                }
+            }
+        });
+    } else {
+        room.participants.forEach(p => {
+            if (p.owner) {
+                var code_instance = $('.other-code').find('.CodeMirror.cm-s-t-light')[0].CodeMirror;
+                if (code_instance.getValue() != p.code) {
+                    var scrollInfo = code_instance.getScrollInfo();
+                    code_instance.setValue(p.code);
+                    code_instance.scrollTo(scrollInfo.left, scrollInfo.top);
+                }
+            }
+        });
+    }
+});
 socket.on('bad-room', id => {
     $('#id').addClass('error');
+});
+socket.on('disconnect_teacher', _ => {
+    // if (!owner) {
+    //     alert('teacher disconnected');
+    // }
+})
+socket.on('disconnect_student', userid => {
+    $('.student[userid="' + userid + '"]').remove();
 });
 
 
@@ -158,6 +169,8 @@ $('.teacher-code-toggle').click(e => {
     if ($('.teacher-code-window').hasClass('hidden')) {
         $('.teacher-code-toggle').text('click to show teacher\'s code, canvas and console');
     } else {
+        other_cm.refresh();
+        other_cm_console.refresh();
         $('.teacher-code-toggle').text('click to hide teacher\'s code, canvas and console');
     }
 });
@@ -187,13 +200,7 @@ function run() {
             }
             var method = ctx[msg.method];
             if (typeof method === "function") {
-                //if (method.length === msg.args.length) {
                 method.apply(ctx, msg.args);
-                // } else if (method.length > msg.args.length) {
-                //     print_error('TypeError: Not enough arguments');
-                // } else {
-                //     print_error('TypeError: Too many arguments');
-                // }
             } else {
                 print_error('TypeError: ' + msg.method + 'is not a function.');
             }

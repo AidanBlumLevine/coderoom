@@ -21,7 +21,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('room', (id) => {
-        if (socket.rooms[id] === undefined && Rooms.find(id) !== undefined) {
+        if (socket.rooms[id] == undefined && Rooms.find(id) != undefined) {
             Rooms.join(socket, id);
         } else {
             socket.emit('bad-room', id);
@@ -33,15 +33,16 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        var closed_room = socket.controlled_room
-        if (closed_room !== undefined) {
-            Rooms.close(socket);
-        }
+        // var closed_room = socket.controlled_room;
+        // if (closed_room) {
+        //     Rooms.close(socket);
+        // }
+        Rooms.disconnect(socket);
     });
 });
 
 setInterval(function () {
-    Rooms.update();
+    Rooms.update_clients();
 }, 1000);
 
 http.listen(5000, () => {

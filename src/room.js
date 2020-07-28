@@ -5,9 +5,11 @@ module.exports = class Rooms {
         this.rooms = [];
     }
 
-    update() {
+    update_clients() {
         this.rooms.forEach((room) => {
-
+            room.participants.forEach((participant) => {
+                participant.socket.emit('update', this.status(room.id));
+            })
         });
     }
 
@@ -45,16 +47,14 @@ module.exports = class Rooms {
 
     close(owner) {
         var remove = owner.controlled_room;
-        if (remove !== undefined) {
-            this.find(remove).participants.forEach(participant => {
-                participant.socket.leave(remove.id);
-                participant.socket.emit('room_closed', participant.owner);
-            })
-            owner.controlled_room = undefined;
-            this.rooms = this.rooms.filter((room) => {
-                remove != room.id;
-            });
-        }
+        this.find(remove).participants.forEach(participant => {
+            participant.socket.leave(remove);
+            participant.socket.emit('room_closed', participant.owner);
+        })
+        owner.controlled_room = undefined;
+        this.rooms = this.rooms.filter((room) => {
+            return remove != room.id;
+        });
     }
 
     find(id) {
@@ -73,9 +73,12 @@ module.exports = class Rooms {
         for (var i = 0; i < room.participants.length; i++) {
             simplified_participants.push({
                 owner: room.participants[i].owner,
-                socket: room.participants[i].socket.id,
+                socket: {
+                    id: room.participants[i].socket.id,
+                    name: room.participants[i].socket.username
+                },
                 userid: room.participants[i].userid,
-                code: room.participants[i].code     
+                code: room.participants[i].code
             });
         }
         return {
@@ -87,11 +90,32 @@ module.exports = class Rooms {
     update(socket, code) {
         this.rooms.forEach(room => {
             var participants = room.participants.filter(p => {
-                p.socket === socket;
+                return p.socket === socket;
             });
             if (participants.length > 0) {
                 participants[0].code = code;
             }
         })
+    }
+
+    disconnect(socket) {
+        this.rooms.forEach(room => {
+            var leaving = room.participants.filter(p => {
+                return p.socket === socket;
+            });
+            if (leaving.length > 0) {
+                room.participants.splice(room.participants.indexOf(leaving[0]), 1);
+                if(leaving[0].owner){
+                    room.participants.forEach(participant => {
+                        participant.socket.emit('disconnect_teacher', '');
+                    })
+                } else {
+                    var owner = room.participants.filter(p => {
+                        return p.owner;
+                    })[0];
+                    owner.socket.emit('disconnect_student', leaving[0].userid);
+                }     
+            }
+        });
     }
 }
