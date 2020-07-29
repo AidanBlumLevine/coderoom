@@ -99,16 +99,20 @@ body {
 .teacher-code-toggle:hover {
     color: #161821;
     transition: color .4s;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
 }
 
 .teacher-code-window.hidden {
     display: none;
 }
 
-.other-code-area, .other-bottom {
+.other-code-area {
     display: flex;
     flex: 1;
     flex-direction: column;
+    height: 40%;
 }
 
 .other-code {
@@ -118,45 +122,16 @@ body {
     position: relative;
 }
 
-.other-bottom {
+.other-console {
+    display: flex;
+    height: 25%;
     position: relative;
-    margin-bottom: 10px;
 }
 
-.other-console, .other-canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 2;
-}
-
-.other-console.hide, .other-canvas.hide {
-    display: none;
-}
-
-.other-switch {
-    user-select: none;
-    -webkit-user-select: none;
-    text-align: center;
-    cursor: pointer;
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -10;
-    background-color: #161821;
-    color: #fafafa;
-    font-size: 10;
-    height: 12px;
-    font-family: monospace;
-    border-radius: 0px 0px 10px 0px;
-    transition: background-color .4s;
-}
-
-.other-switch:hover {
-    background-color: #34363f;
-    transition: background-color .4s;
+.other-canvas {
+    display: flex;
+    height: 30%;
+    position: relative;
 }
 
 #canvas-wrapper {
@@ -263,6 +238,22 @@ body {
     color: #202020;
     border-radius: 4px;
     padding: 2px 6px;
+}
+
+.no-students {
+    font-size: small;
+    margin-top: 20px;
+    margin-bottom: -30px;
+    margin-left: auto;
+    margin-right: auto;
+    height: 10px;
+    background: #f1f1f1;
+    color: #787878;
+    text-align: center;
+    padding-bottom: 7px;
+    border-radius: 10px 10px 0px 0px;
+    width: 100%;
+    box-shadow: 0 5px 30px 0 rgba(0, 0, 0, .2);
 }
 
 strong {

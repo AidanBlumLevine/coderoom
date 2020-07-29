@@ -30,7 +30,7 @@ socket.on('connected', room => {
     cm.on("change", function () {
         clearTimeout(run_timeout);
         changed = true;
-        run_timeout = setTimeout(function() {
+        run_timeout = setTimeout(function () {
             run(workers['local']);
         }, 300);
     });
@@ -55,15 +55,15 @@ socket.on('connected', room => {
     setTimeout(function () { //all this does is fix misalligned line numbers
         workers['local'].code.refresh();
     }, 1500);
-    
-    $(window).on('resize', function () {        
-        $('canvas').each(function( index ) {
+
+    $(window).on('resize', function () {
+        $('canvas').each(function (index) {
             var c = $(this)[0];
             c.width = c.offsetWidth;
             c.height = c.offsetHeight;
         });
         $('#canvas-title').attr('canvas-label', 'html canvas \xa0' + workers['local'].canvas.width + ' x ' + workers['local'].canvas.height);
-        for(var id in workers) {
+        for (var id in workers) {
             run(workers[id]);
         }
     });
@@ -99,7 +99,7 @@ socket.on('connected', room => {
         ctx: other_ctx
     }
 
-    $(window).trigger('resize'); 
+    $(window).trigger('resize');
 });
 
 socket.on('update', room => {
@@ -107,6 +107,7 @@ socket.on('update', room => {
         room.participants.forEach(p => {
             if (!p.owner) {
                 if ($('.student[userid="' + p.userid + '"]').length == 0) {
+                    $('.no-students').remove();
                     var new_student = $('.student:hidden').clone();
                     new_student.removeAttr('hidden').attr('userid', p.userid);
                     new_student.appendTo('.student-area-sizer');
@@ -152,7 +153,7 @@ socket.on('update', room => {
                     var scrollInfo = code_instance.getScrollInfo();
                     code_instance.setValue(p.code);
                     code_instance.scrollTo(scrollInfo.left, scrollInfo.top);
-                    $(window).trigger('resize'); 
+                    run(workers['teacher']);
                 }
             }
         });
@@ -167,9 +168,14 @@ socket.on('disconnect_teacher', _ => {
     // }
 })
 socket.on('disconnect_student', userid => {
-    workers[userid].worker.terminate();
+    if (workers[userid].worker) {
+        workers[userid].worker.terminate();
+    }
     delete workers[userid];
     $('.student[userid="' + userid + '"]').remove();
+    if ($('.student:visible').length == 0) {
+        $('.student-area-sizer').html('<div class="no-students">students will appear here once they join</div>');
+    }
 });
 
 
@@ -189,15 +195,6 @@ $('#canvas-title').click(e => {
 $('.close-canvas-help').click(e => {
     $('#canvas-help').removeClass('show');
 })
-$('.other-switch').click(e => {
-    $('.other-console').toggleClass('hide');
-    $('.other-canvas').toggleClass('hide');
-    if ($('.other-console').hasClass('hide')) {
-        $('.other-switch').text('click to switch to teacher\'s console');
-    } else {
-        $('.other-switch').text('click to switch to teacher\'s canvas');
-    }
-});
 $('.teacher-code-toggle').click(e => {
     $('.teacher-code-window').toggleClass('hidden');
     if ($('.teacher-code-window').hasClass('hidden')) {
@@ -205,6 +202,10 @@ $('.teacher-code-toggle').click(e => {
     } else {
         workers['teacher'].code.refresh();
         workers['teacher'].console.refresh();
+        var c = $('.other-canvas-obj')[0];
+        c.width = c.offsetWidth;
+        c.height = c.offsetHeight;
+        run(workers['teacher']);
         $('.teacher-code-toggle').text('click to hide teacher\'s code, canvas and console');
     }
 });
