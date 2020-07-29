@@ -1,10 +1,6 @@
 var socket = io();
-var cm;
-var cm_console;
-var worker;
+var workers = {};
 var run_timeout;
-var canvas;
-var ctx;
 var owner = false;
 var changed = false; //queue for updating server
 socket.on('name', name => {
@@ -27,14 +23,16 @@ socket.on('connected', room => {
     $('.content').parent().addClass('hide-left-double');
     $('.room').removeClass('unflat').addClass('flat').parent().addClass('hide-left-double');
     $('.horizontal-flex').addClass('unflat-strong');
-    cm = CodeMirror($('#inner-code')[0], {
+    var cm = CodeMirror($('#inner-code')[0], {
         lineNumbers: true,
         theme: 't-light'
     });
     cm.on("change", function () {
         clearTimeout(run_timeout);
         changed = true;
-        run_timeout = setTimeout(run, 300);
+        run_timeout = setTimeout(function() {
+            run(workers['local']);
+        }, 300);
     });
     setInterval(function () {
         if (changed) {
@@ -48,42 +46,62 @@ socket.on('connected', room => {
         $('#code').attr('after-content', line);
     });
     $('#code').attr('after-content', 'ln ' + 0 + '\xa0 ch ' + 0 + '\xa0 javascript');
-    cm_console = CodeMirror($('#inner-console')[0], {
+    var cm_console = CodeMirror($('#inner-console')[0], {
         theme: 't-console',
         readOnly: true,
         mode: 'text/plain'
     });
-    setTimeout(function () {
-        cm.refresh();
-        cm_console.refresh();
+
+    setTimeout(function () { //all this does is fix misalligned line numbers
+        workers['local'].code.refresh();
     }, 1500);
-    canvas = $('#canvas')[0];
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-    $('#canvas-title').attr('canvas-label', 'html canvas \xa0' + canvas.width + ' x ' + canvas.height);
-    $(window).on('resize', function () {
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
-        $('#canvas-title').attr('canvas-label', 'html canvas \xa0' + canvas.width + ' x ' + canvas.height);
-        run();
+    
+    $(window).on('resize', function () {        
+        $('canvas').each(function( index ) {
+            var c = $(this)[0];
+            c.width = c.offsetWidth;
+            c.height = c.offsetHeight;
+        });
+        $('#canvas-title').attr('canvas-label', 'html canvas \xa0' + workers['local'].canvas.width + ' x ' + workers['local'].canvas.height);
+        for(var id in workers) {
+            run(workers[id]);
+        }
     });
-    ctx = canvas.getContext('2d');
+
+    var ctx = canvas.getContext('2d');
     ctx.save();
+    workers['local'] = {
+        console: cm_console,
+        code: cm,
+        canvas: canvas,
+        ctx: ctx
+    }
 
-    //Other
-
-    other_cm_console = CodeMirror($('.other-console')[0], {
+    var other_cm_console = CodeMirror($('.other-console')[0], {
         theme: 't-console',
         readOnly: true,
         mode: 'text/plain'
     });
-    other_cm = CodeMirror($('.other-code')[0], {
+    var other_cm = CodeMirror($('.other-code')[0], {
         readOnly: true,
         lineNumbers: true,
         theme: 't-light',
         cursorBlinkRate: -1
     });
+    var other_canvas = $('.other-canvas-obj')[0];
+    var other_ctx = other_canvas.getContext('2d');
+    other_ctx.save();
+
+    workers['teacher'] = {
+        console: other_cm_console,
+        code: other_cm,
+        canvas: other_canvas,
+        ctx: other_ctx
+    }
+
+    $(window).trigger('resize'); 
 });
+
 socket.on('update', room => {
     if (owner) {
         room.participants.forEach(p => {
@@ -93,6 +111,9 @@ socket.on('update', room => {
                     new_student.removeAttr('hidden').attr('userid', p.userid);
                     new_student.appendTo('.student-area-sizer');
                     new_student.find('.student-title').text(p.socket.name);
+                    var c = new_student.find('canvas')[0];
+                    c.width = c.offsetWidth;
+                    c.height = c.offsetHeight;
                     var student_code = CodeMirror(new_student.find('.student-code')[0], {
                         readOnly: true,
                         lineNumbers: true,
@@ -104,23 +125,34 @@ socket.on('update', room => {
                         readOnly: true,
                         mode: 'text/plain'
                     });
+                    var student_canvas = new_student.find('canvas')[0];
+                    var student_ctx = student_canvas.getContext('2d');
+                    student_ctx.save();
+                    workers[p.userid] = {
+                        console: student_console,
+                        code: student_code,
+                        canvas: student_canvas,
+                        ctx: student_ctx
+                    }
                 }
-                var code_instance = $('.student[userid="' + p.userid + '"]').find('.CodeMirror.cm-s-t-light')[0].CodeMirror;
+                var code_instance = workers[p.userid].code;
                 if (code_instance.getValue() != p.code) {
                     var scrollInfo = code_instance.getScrollInfo();
                     code_instance.setValue(p.code);
                     code_instance.scrollTo(scrollInfo.left, scrollInfo.top);
+                    run(workers[p.userid]);
                 }
             }
         });
     } else {
         room.participants.forEach(p => {
             if (p.owner) {
-                var code_instance = $('.other-code').find('.CodeMirror.cm-s-t-light')[0].CodeMirror;
+                var code_instance = workers['teacher'].code;
                 if (code_instance.getValue() != p.code) {
                     var scrollInfo = code_instance.getScrollInfo();
                     code_instance.setValue(p.code);
                     code_instance.scrollTo(scrollInfo.left, scrollInfo.top);
+                    $(window).trigger('resize'); 
                 }
             }
         });
@@ -135,6 +167,8 @@ socket.on('disconnect_teacher', _ => {
     // }
 })
 socket.on('disconnect_student', userid => {
+    workers[userid].worker.terminate();
+    delete workers[userid];
     $('.student[userid="' + userid + '"]').remove();
 });
 
@@ -169,91 +203,67 @@ $('.teacher-code-toggle').click(e => {
     if ($('.teacher-code-window').hasClass('hidden')) {
         $('.teacher-code-toggle').text('click to show teacher\'s code, canvas and console');
     } else {
-        other_cm.refresh();
-        other_cm_console.refresh();
+        workers['teacher'].code.refresh();
+        workers['teacher'].console.refresh();
         $('.teacher-code-toggle').text('click to hide teacher\'s code, canvas and console');
     }
 });
 
-function run() {
-    ctx.restore();
-    ctx.save();
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    cm_console.setValue('');
-    var code = cm.getValue();
+function run(w) {
+    w.ctx.restore();
+    w.ctx.save();
+    w.ctx.clearRect(0, 0, w.canvas.width, w.canvas.height);
+    w.console.setValue('');
+
+    var code = w.code.getValue();
     code = code.split('console.log').join('console_log');
     code = worker_addons + '\n' + code;
     var blob = new Blob([code]);
-    if (worker) {
-        worker.terminate();
-    }
-    worker = new Worker(window.URL.createObjectURL(blob));
-    worker.onmessage = function (message) {
+    if (w.worker) { w.worker.terminate(); }
+    w.worker = new Worker(window.URL.createObjectURL(blob));
+
+    w.worker.onmessage = function (message) {
         var msg = JSON.parse(message.data);
         if (msg.type == 'console') {
-            print(msg.message);
+            var newline = '';
+            if (w.console.getValue().length > 0) {
+                newline = '\n';
+            }
+            w.console.replaceRange(newline + msg.message, CodeMirror.Pos(w.console.lastLine()));
         }
         if (msg.type == 'canvas') {
             var attributes = msg.attributes;
             for (var a in attributes) {
-                ctx[a] = attributes[a];
+                w.ctx[a] = attributes[a];
             }
-            var method = ctx[msg.method];
-            if (typeof method === "function") {
-                method.apply(ctx, msg.args);
-            } else {
-                print_error('TypeError: ' + msg.method + 'is not a function.');
-            }
+            var method = w.ctx[msg.method];
+            method.apply(w.ctx, msg.args);
         }
         if (msg.type == 'image') {
             var img = new Image();
             img.onload = function () {
                 if (msg.args.length == 5) {
-                    ctx.drawImage(img, msg.args[1], msg.args[2], msg.args[3], msg.args[4]);
+                    w.ctx.drawImage(img, msg.args[1], msg.args[2], msg.args[3], msg.args[4]);
                 } else {
-                    ctx.drawImage(img, msg.args[1], msg.args[2]);
+                    w.ctx.drawImage(img, msg.args[1], msg.args[2]);
                 }
             };
             img.src = msg.args[0];
         }
     }
-    worker.onerror = function (error) {
-        print_error(error.message);
-    }
-}
 
-function print(text) {
-    var newline = '';
-    if (cm_console.getValue().length > 0) {
-        newline = '\n';
+    w.worker.onerror = function (error) {
+        var curr_length = w.console.lineCount();
+        var newline = '';
+        if (w.console.getValue().length > 0) {
+            newline = '\n';
+            curr_length++;
+        }
+        w.console.replaceRange(newline + ' ' + error.message + ' ', CodeMirror.Pos(w.console.lastLine()));
+        w.console.markText({ line: curr_length - 1, ch: 0 },
+            { line: curr_length - 1, ch: w.console.getLine(curr_length - 1).length },
+            { className: "cm-error" });
     }
-    cm_console.replaceRange(newline + text, CodeMirror.Pos(cm_console.lastLine()));
-    //I dont need escapeHtml because codemirror excapes it for me
-}
-
-function print_error(text) {
-    var curr_length = cm_console.lineCount();
-    var newline = '';
-    if (cm_console.getValue().length > 0) {
-        newline = '\n';
-        curr_length++;
-    }
-    cm_console.replaceRange(newline + ' ' + text + ' ', CodeMirror.Pos(cm_console.lastLine()));
-    cm_console.markText({ line: curr_length - 1, ch: 0 },
-        { line: curr_length - 1, ch: cm_console.getLine(curr_length - 1).length },
-        { className: "cm-error" });
-}
-
-function escapeHtml(unsafe) {
-    if (unsafe == undefined) {
-        return '';
-    }
-    return unsafe.toString()
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
 }
 
 //CANVAS EMULATOR
