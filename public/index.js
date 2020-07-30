@@ -39,6 +39,7 @@ socket.on('connected', room => {
             changed = false;
             socket.emit('update', cm.getValue());
         }
+        update_times();
     }, 1000);
     cm.on("cursorActivity", function () {
         var cursor = cm.getCursor();
@@ -111,6 +112,7 @@ socket.on('update', room => {
                     var new_student = $('.student:hidden').clone();
                     new_student.removeAttr('hidden').attr('userid', p.userid);
                     new_student.appendTo('.student-area-sizer');
+                    new_student.attr('name', p.socket.name);
                     new_student.find('.student-title').text(p.socket.name);
                     var c = new_student.find('canvas')[0];
                     c.width = c.offsetWidth;
@@ -133,11 +135,13 @@ socket.on('update', room => {
                         console: student_console,
                         code: student_code,
                         canvas: student_canvas,
-                        ctx: student_ctx
+                        ctx: student_ctx,
+                        last_edit: new Date()
                     }
                 }
                 var code_instance = workers[p.userid].code;
                 if (code_instance.getValue() != p.code) {
+                    workers[p.userid].last_edit = new Date();
                     var scrollInfo = code_instance.getScrollInfo();
                     code_instance.setValue(p.code);
                     code_instance.scrollTo(scrollInfo.left, scrollInfo.top);
@@ -209,6 +213,19 @@ $('.teacher-code-toggle').click(e => {
         $('.teacher-code-toggle').text('click to hide teacher\'s code, canvas and console');
     }
 });
+
+function update_times() {
+    $('.student:visible').each(function (index) {
+        var w = workers[$(this).attr('userid')];
+        var ago = Math.floor((new Date().getTime() - w.last_edit.getTime()) / 1000);
+        if(ago < 3){
+            ago = 'now';
+        } else {
+            ago = ago + " seconds ago"
+        }
+        $(this).find('.student-title').text($(this).attr('name') + "  last edit: " + ago);
+    });
+}
 
 function run(w) {
     w.ctx.restore();
