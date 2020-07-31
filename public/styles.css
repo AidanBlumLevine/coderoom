@@ -11,6 +11,7 @@ body {
 * {
     letter-spacing: .5;
     font-weight: lighter;
+    font-family: "Roboto", sans-serif;
 }
 
 .content {
@@ -78,6 +79,7 @@ body {
     bottom: 0;
     display: flex;
     flex-direction: column;
+    z-index: 5;
 }
 
 .teacher-code-toggle {
@@ -323,6 +325,7 @@ canvas {
 .wrapper {
     display: flex;
     flex: 1 1 0px;
+    flex-direction: column;
 }
 
 .higher {
@@ -468,7 +471,7 @@ h3 {
 
 .student-title {
     background: #f5f5f5;
-    color: #202020;
+    color: #b0b0b0;
     display: flex;
     height: 1rem;
     padding: .5rem;
@@ -476,6 +479,10 @@ h3 {
     border-top: 1px solid #eeeeee;
     border-left: 1px solid #eeeeee;
     border-right: 1px solid #eeeeee;
+}
+
+.student-name {
+    margin-right: auto;
 }
 
 .student-bottom {
@@ -505,6 +512,19 @@ h3 {
     display: flex;
     height: 25%;
     position: relative;
+}
+
+.reconnect {
+    margin-left: auto;
+    margin-right: auto;
+    cursor: pointer;
+    color: #b0b0b0;
+    transition: color .4s;
+}
+
+.reconnect:hover {
+    color: #161821;
+    transition: color .4s;
 }
 
 input {

@@ -33,11 +33,17 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        // var closed_room = socket.controlled_room;
-        // if (closed_room) {
-        //     Rooms.close(socket);
-        // }
         Rooms.disconnect(socket);
+    });
+
+    socket.on('can_reconnect', (info) => {
+        if(Rooms.can_reconnect(info)){
+            socket.emit('can_reconnect');
+        }
+    });
+
+    socket.on('do_reconnect', (info) => {
+        Rooms.reconnect(socket, info);
     });
 });
 

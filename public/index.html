@@ -1,5 +1,6 @@
 <head>
     <link rel="stylesheet" href="/styles.css">
+    <title>code room</title>
 </head>
 
 <body>
@@ -14,6 +15,10 @@
                 <h3>Code Room</h3>
                 <input type="text" id="name" placeholder="Name">
                 <button class="button" id="submit">Continue</button>
+            </div>
+
+            <div class="reconnect" hidden>
+                Reconnect to previous room
             </div>
         </div>
         <div class="wrapper higher">
@@ -77,7 +82,10 @@
 
     <div class="student" hidden>
         <div class="student-box">
-            <div class="student-title"></div>
+            <div class="student-title">
+                <div class="student-name"></div>
+                <div class="student-edited"></div>
+            </div>
             <div class="student-code"></div>
             <div class="student-canvas">
                 <canvas></canvas>

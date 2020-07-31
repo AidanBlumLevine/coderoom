@@ -3,6 +3,7 @@ var workers = {};
 var run_timeout;
 var owner = false;
 var changed = false; //queue for updating server
+var reconnect; //cached cookie
 socket.on('name', name => {
     $('.naming').addClass('flat').parent().addClass('hide-left');
     $('.room').addClass('unflat').parent().addClass('hide-left');
@@ -10,10 +11,19 @@ socket.on('name', name => {
     $('.name').text(name);
 });
 socket.on('connected', room => {
-    $('.id').text(room.id);
-    owner = room.participants.filter(p => {
+    var this_p = room.participants.filter(p => {
         return p.socket.id == socket.id;
-    })[0].owner;
+    })[0];
+    owner = this_p.owner;
+
+    set_reconnect({
+        name: $('#name').val(),
+        userid: this_p.userid,
+        id: room.id,
+        owner: owner
+    });
+
+    $('.id').text(room.id);
     if (owner) {
         $('.teacher-code-toggle').hide();
     } else {
@@ -27,6 +37,7 @@ socket.on('connected', room => {
         lineNumbers: true,
         theme: 't-light'
     });
+    cm.setValue(this_p.code);
     cm.on("change", function () {
         clearTimeout(run_timeout);
         changed = true;
@@ -113,7 +124,7 @@ socket.on('update', room => {
                     new_student.removeAttr('hidden').attr('userid', p.userid);
                     new_student.appendTo('.student-area-sizer');
                     new_student.attr('name', p.socket.name);
-                    new_student.find('.student-title').text(p.socket.name);
+                    new_student.find('.student-name').text(p.socket.name);
                     var c = new_student.find('canvas')[0];
                     c.width = c.offsetWidth;
                     c.height = c.offsetHeight;
@@ -166,11 +177,6 @@ socket.on('update', room => {
 socket.on('bad-room', id => {
     $('#id').addClass('error');
 });
-socket.on('disconnect_teacher', _ => {
-    // if (!owner) {
-    //     alert('teacher disconnected');
-    // }
-})
 socket.on('disconnect_student', userid => {
     if (workers[userid].worker) {
         workers[userid].worker.terminate();
@@ -184,7 +190,11 @@ socket.on('disconnect_student', userid => {
 
 
 $('#submit').click(e => {
-    socket.emit('name', $('#name').val());
+    if ($('#name').val().trim().length == 0) {
+        $('#name').addClass('error');
+    } else {
+        socket.emit('name', $('#name').val());
+    }
 });
 $('#join').click(e => {
     socket.emit('room', $('#id').val());
@@ -214,16 +224,37 @@ $('.teacher-code-toggle').click(e => {
     }
 });
 
+$(document).ready(() => {
+    if (document.cookie.length > 0) {
+        reconnect = JSON.parse(document.cookie.split('reconnect=')[1]);
+        socket.emit('can_reconnect', {
+            id: reconnect.id,
+            userid: reconnect.userid
+        });
+    }
+});
+
+socket.on('can_reconnect', () => {
+    $('.reconnect').show();
+    $('.reconnect').click(e => {
+        socket.emit('do_reconnect', {
+            id: reconnect.id,
+            userid: reconnect.userid
+        });
+    });
+});
+
+
 function update_times() {
     $('.student:visible').each(function (index) {
         var w = workers[$(this).attr('userid')];
         var ago = Math.floor((new Date().getTime() - w.last_edit.getTime()) / 1000);
-        if(ago < 3){
+        if (ago < 1) {
             ago = 'now';
         } else {
             ago = ago + " seconds ago"
         }
-        $(this).find('.student-title').text($(this).attr('name') + "  last edit: " + ago);
+        $(this).find('.student-edited').text("edited " + ago);
     });
 }
 
@@ -282,6 +313,13 @@ function run(w) {
             { line: curr_length - 1, ch: w.console.getLine(curr_length - 1).length },
             { className: "cm-error" });
     }
+}
+
+function set_reconnect(reconnect_data) {
+    var d = new Date();
+    d.setTime(d.getTime() + (24 * 60 * 60 * 1000));
+    var expires = "expires=" + d.toUTCString();
+    document.cookie = 'reconnect =' + JSON.stringify(reconnect_data) + ";" + expires + ";path=/";
 }
 
 //CANVAS EMULATOR

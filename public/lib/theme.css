@@ -116,13 +116,16 @@
 }
 
 .CodeMirror {
-    /* font-family: system-ui; */
     position: absolute;
     top: 0;
     bottom: 0;
     left: 0;
     right: 0;
     height: 100%;
+}
+
+.CodeMirror * {
+    font-family: monospace !important;
 }
 
 /* .cm-s-t-light.CodeMirror {
