@@ -95,7 +95,7 @@ socket.on('connected', room => {
         mode: 'text/plain'
     });
     var other_cm = CodeMirror($('.other-code')[0], {
-        readOnly: true,
+        readOnly: 'nocursor',
         lineNumbers: true,
         theme: 't-light',
         cursorBlinkRate: -1
@@ -188,9 +188,8 @@ socket.on('disconnect_student', userid => {
     }
 });
 
-
 $('#submit').click(e => {
-    if ($('#name').val().trim().length == 0) {
+    if ($('#name').val().trim().length == 0 || $('#name').val().trim().length > 50) {
         $('#name').addClass('error');
     } else {
         socket.emit('name', $('#name').val());
@@ -302,13 +301,15 @@ function run(w) {
     }
 
     w.worker.onerror = function (error) {
+        console.log(error);
         var curr_length = w.console.lineCount();
         var newline = '';
         if (w.console.getValue().length > 0) {
             newline = '\n';
             curr_length++;
         }
-        w.console.replaceRange(newline + ' ' + error.message + ' ', CodeMirror.Pos(w.console.lastLine()));
+        var loc = (error.lineno - 59) + ':' + (error.colno) + ' ';
+        w.console.replaceRange(newline + ' ' + loc + error.message+ ' ', CodeMirror.Pos(w.console.lastLine()));
         w.console.markText({ line: curr_length - 1, ch: 0 },
             { line: curr_length - 1, ch: w.console.getLine(curr_length - 1).length },
             { className: "cm-error" });
