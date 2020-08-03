@@ -51,6 +51,6 @@ setInterval(function () {
     Rooms.update_clients();
 }, 1000);
 
-http.listen(5000, () => {
-    console.log('listening on *:5000');
+http.listen(3000, () => {
+    console.log('listening on *:3000');
 });
