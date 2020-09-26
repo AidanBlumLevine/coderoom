@@ -9,7 +9,7 @@ module.exports = class Rooms {
         this.rooms.forEach((room) => {
             room.participants.forEach((participant) => {
                 if (!participant.disconnected) {
-                    participant.socket.emit('update', this.status(room.id));
+                    participant.socket.emit('update', this.status(room.id, participant));
                 }
             })
         });
@@ -57,20 +57,22 @@ module.exports = class Rooms {
         return found;
     }
 
-    status(id) {
+    status(id, sending_to) {
         var room = this.find(id);
         var simplified_participants = [];
         for (var i = 0; i < room.participants.length; i++) {
-            if (!room.participants[i].disconnected || room.participants[i].owner) { //send teacher even if they are disconnected
-                simplified_participants.push({
-                    owner: room.participants[i].owner,
-                    socket: {
-                        id: room.participants[i].socket.id,
-                        name: room.participants[i].socket.username
-                    },
-                    userid: room.participants[i].userid,
-                    code: room.participants[i].code
-                });
+            if (typeof sending_to == 'undefined' || sending_to.owner || room.participants[i].owner) { //send all to owner, send owner to others
+                if (!room.participants[i].disconnected || room.participants[i].owner) { //send teacher even if they are disconnected
+                    simplified_participants.push({
+                        owner: room.participants[i].owner,
+                        socket: {
+                            id: room.participants[i].socket.id,
+                            name: room.participants[i].socket.username
+                        },
+                        userid: room.participants[i].userid,
+                        code: room.participants[i].code
+                    });
+                }
             }
         }
         return {
@@ -137,9 +139,9 @@ module.exports = class Rooms {
                     })[0];
                     owner.socket.emit('disconnect_student', leaving[0].userid);
                 }
-                if(room.participants.filter(p => {
+                if (room.participants.filter(p => {
                     return !p.disconnected;
-                }).length == 0){
+                }).length == 0) {
                     this.rooms.splice(this.rooms.indexOf(room), 1);
                 }
             }
