@@ -188,6 +188,11 @@ socket.on('disconnect_student', userid => {
     }
 });
 
+$('#name').keydown(function(event) {
+    if (event.keyCode === 13) {
+        $("#submit").click();
+    }
+});
 $('#submit').click(e => {
     if ($('#name').val().trim().length == 0 || $('#name').val().trim().length > 50) {
         $('#name').addClass('error');
@@ -195,10 +200,17 @@ $('#submit').click(e => {
         socket.emit('name', $('#name').val());
     }
 });
+
+$('#id').keydown(function(event) {
+    if (event.keyCode === 13) {
+        $("#join").click();
+    }
+});
 $('#join').click(e => {
     socket.emit('room', $('#id').val());
     $('#id').removeClass('error');
 });
+
 $('#create').click(e => {
     socket.emit('create', '');
 });
