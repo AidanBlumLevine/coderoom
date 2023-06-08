@@ -1,9 +1,6 @@
 # coderoom
 
-🟥🟥🟥 Since heroku is no longer free, the links below do not work. I will look for other hosting options when I have time. 🟥🟥🟥
-<br>
-
-[Coderoom](https://coderooom.herokuapp.com/) is a tool to help teachers run virtual coding classes. Here's how it works:
+[Coderoom](https://coderoom-bl13.onrender.com/) is a tool to help teachers run virtual coding classes. Here's how it works:
 
 ![naming](https://github.com/AidanBlumLevine/coderoom/blob/master/naming_text.png)
 ---
